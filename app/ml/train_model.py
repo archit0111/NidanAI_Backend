@@ -29,7 +29,8 @@ X_train, X_test, y_train, y_test = train_test_split(
 print("Training model...")
 
 model = RandomForestClassifier(
-    n_estimators=300,
+    n_estimators=50,
+    max_depth=20,
     random_state=42,
     n_jobs=-1
 )

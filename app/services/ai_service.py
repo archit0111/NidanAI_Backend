@@ -1,79 +1,38 @@
 import json
 import re
 
-from app.rag.retriever import MedicalRetriever
-from app.rag.prompt_builder import MedicalPromptBuilder
+from app.ml.predictor import predict_disease
 from app.llm.gemini import GeminiClient
+from app.llm.prompt_builder import MedicalPromptBuilder
 
 
 class AIService:
 
     def __init__(self):
-
-        self.retriever = MedicalRetriever()
-        self.prompt_builder = MedicalPromptBuilder()
         self.gemini = GeminiClient()
+        self.prompt_builder = MedicalPromptBuilder()
 
-
-    def clean_json(self, response):
-
-        response = response.strip()
-
-        response = re.sub(
-            r"```json|```",
-            "",
-            response
-        )
-
-        return response.strip()
-
+    def clean_json(self, text):
+        text = re.sub(r"```json|```", "", text)
+        return text.strip()
 
     def generate_report(self, patient_data):
 
-        query = f"""
-        Symptoms:
-        {patient_data.get("symptoms")}
-
-        Description:
-        {patient_data.get("description")}
-        """
-
-
-        knowledge = self.retriever.search(
-            query,
-            top_k=5
+        predictions = predict_disease(
+            patient_data["symptoms"]
         )
-
 
         prompt = self.prompt_builder.build(
             patient_data,
-            knowledge
+            predictions
         )
 
+        response = self.gemini.generate(prompt)
 
-        response = self.gemini.generate(
-            prompt
-        )
+        response = self.clean_json(response)
 
+        report = json.loads(response)
 
-        cleaned = self.clean_json(
-            response
-        )
+        report["mlPrediction"] = predictions
 
-
-        try:
-
-            report = json.loads(
-                cleaned
-            )
-
-
-        except json.JSONDecodeError:
-
-            return {
-                "error": "AI returned invalid JSON",
-                "raw": response
-            }
-
-
-        return report   # IMPORTANT
+        return report
