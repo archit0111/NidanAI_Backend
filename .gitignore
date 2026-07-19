@@ -4,5 +4,4 @@ __pycache__/
 *.pyc
 
 # Large files
-app/ml/saved_models/*.pkl
 app/chroma_db/
